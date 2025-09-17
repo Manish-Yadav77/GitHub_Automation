@@ -12,7 +12,7 @@ import Footer from './components/Footer';
 // Import pages
 import Landing from './pages/Landing';
 import Login from './pages/Login';
-import Signup from './pages/SignUp';
+import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
