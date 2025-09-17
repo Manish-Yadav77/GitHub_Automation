@@ -17,38 +17,49 @@ const Navbar = () => {
     setIsDropdownOpen(false);
   };
 
+  const desktopOnlyStyle = {
+    display: 'none',
+    // React supports CSSOMStyleDeclaration injection for media queries via a <style> tag.
+  };
+
   return (
     <nav className="bg-white shadow-lg fixed w-full z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to={user ? "/dashboard" : "/"} className="flex items-center">
-              <Github className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">AutoCommit</span>
+              {/* <Github className="h-8 w-8 text-green-600" /> */}
+              <img
+                src="/logo-horizontal.png"
+                alt="AutoCommit"
+                className="h-40"
+              />
+              {/* <span className="ml-2 text-xl font-bold text-gray-900">AutoCommit</span> */}
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className=" md:flex items-center space-x-8"
+            data-desktop-only="true"
+            style={{ display: 'none' }}
+          >
             {user ? (
               <>
                 <Link
                   to="/dashboard"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive('/dashboard')
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/dashboard')
                       ? 'text-blue-600 bg-blue-50'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/analytics"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive('/analytics')
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/analytics')
                       ? 'text-blue-600 bg-blue-50'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   Analytics
                 </Link>
@@ -119,6 +130,15 @@ const Navbar = () => {
             )}
           </div>
 
+          <style>
+            {`
+              @media (min-width: 768px) {
+                /* Target the div via a specific data-attr to avoid global side-effects */
+                [data-desktop-only="true"] { display: flex !important; }
+              }
+            `}
+          </style>
+
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <button
@@ -139,22 +159,20 @@ const Navbar = () => {
               <>
                 <Link
                   to="/dashboard"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    isActive('/dashboard')
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/dashboard')
                       ? 'text-blue-600 bg-blue-50'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                   onClick={() => setIsOpen(false)}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/analytics"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    isActive('/analytics')
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/analytics')
                       ? 'text-blue-600 bg-blue-50'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                   onClick={() => setIsOpen(false)}
                 >
                   Analytics
