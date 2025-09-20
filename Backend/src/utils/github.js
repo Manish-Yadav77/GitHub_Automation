@@ -170,11 +170,10 @@ export const getFileContent = async (accessToken, owner, repo, path) => {
 //   return existingContent + newLine;
 // };
 
+
 export const generateCommitContent = (phrases, existingContent) => {
   const timestamp = new Date().toISOString();
   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-  
-  // Add meaningful content, not just newlines
-  const newContent = `${existingContent}\n<!-- ${randomPhrase} - ${timestamp} -->\n`;
-  return newContent;
+  const comment = `<!-- ${randomPhrase} - ${timestamp} -->`;
+  return existingContent + `\n${comment}`;
 };
