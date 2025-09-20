@@ -13,7 +13,7 @@ export const useAuth = () => {
   return context;
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://github-automation-8d48.onrender.com';
 
 // Configure axios defaults
 axios.defaults.baseURL = API_URL;
