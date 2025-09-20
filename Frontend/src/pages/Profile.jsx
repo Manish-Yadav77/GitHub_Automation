@@ -42,7 +42,7 @@ const Profile = () => {
     }
   };
 
-  user?.createdAt && console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))
+  console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
