@@ -122,7 +122,7 @@ const Profile = () => {
             {/* GitHub Connection */}
             <div className="mt-8 pt-8 border-t border-gray-200">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Connected Accounts</h3>
-              
+
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
@@ -138,7 +138,7 @@ const Profile = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   {user?.githubConnected ? (
                     <button
                       onClick={handleDisconnectGitHub}
@@ -158,29 +158,28 @@ const Profile = () => {
             {/* Account Stats */}
             <div className="mt-8 pt-8 border-t border-gray-200">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Account Statistics</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 rounded-lg p-4">
                   <p className="text-sm font-medium text-blue-600">Member Since</p>
                   <p className="text-lg font-semibold text-blue-900">
                     {user?.createdAt
-        ? new Date(user.createdAt).toISOString().replace("Z", "+00:00")
-        : "no date"}
-
-        {
-          console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))
-          
-        }
+                      ? new Date(user.createdAt).toISOString().replace("Z", "+00:00")
+                      : "no date"}
                   </p>
+
+                  {user?.createdAt &&
+                    console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))}
                 </div>
-                
+
+
                 <div className="bg-green-50 rounded-lg p-4">
                   <p className="text-sm font-medium text-green-600">Plan</p>
                   <p className="text-lg font-semibold text-green-900 capitalize">
                     {user?.plan}
                   </p>
                 </div>
-                
+
                 <div className="bg-purple-50 rounded-lg p-4">
                   <p className="text-sm font-medium text-purple-600">Status</p>
                   <p className="text-lg font-semibold text-purple-900">
