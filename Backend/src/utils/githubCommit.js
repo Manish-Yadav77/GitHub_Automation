@@ -57,9 +57,12 @@ export const executeScheduledCommits = async () => {
 
         // Determine if we should make a commit (random chance)
         const maxCommits = automation.maxCommitsPerDay;
-        const shouldCommit =
-          Math.random() < 1 / ((endTotalMinutes - startTotalMinutes) / 60) &&
-          todayCommits < maxCommits;
+        // const shouldCommit =
+        //   Math.random() < 1 / ((endTotalMinutes - startTotalMinutes) / 60) &&
+        //   todayCommits < maxCommits;
+          
+        const shouldCommit = todayCommits === 0 || (todayCommits < maxCommits && Math.random() < 0.3);
+
 
         if (!shouldCommit) {
           continue;

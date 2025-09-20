@@ -161,11 +161,20 @@ export const getFileContent = async (accessToken, owner, repo, path) => {
 };
 
 // Generate random commit content
+// export const generateCommitContent = (phrases, existingContent) => {
+//   const timestamp = new Date().toISOString();
+//   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+  
+//   // Add content to existing file
+//   const newLine = `\n<!-- ${randomPhrase} - ${timestamp} -->`;
+//   return existingContent + newLine;
+// };
+
 export const generateCommitContent = (phrases, existingContent) => {
   const timestamp = new Date().toISOString();
   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
   
-  // Add content to existing file
-  const newLine = `\n<!-- ${randomPhrase} - ${timestamp} -->`;
-  return existingContent + newLine;
+  // Add meaningful content, not just newlines
+  const newContent = `${existingContent}\n<!-- ${randomPhrase} - ${timestamp} -->\n`;
+  return newContent;
 };
