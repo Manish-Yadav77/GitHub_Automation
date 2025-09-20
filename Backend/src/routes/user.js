@@ -17,7 +17,18 @@ router.get('/profile', async (req, res) => {
     }
 
     res.json({
-      user
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        avatar: user.avatar,
+        plan: user.plan,
+        githubConnected: !!user.githubAccessToken,
+        githubUsername: user.githubUsername,
+        settings: user.settings,
+        createdAt: user.createdAt?.toISOString(),
+        isVerified: user.isVerified
+      }
     });
   } catch (error) {
     console.error('Get profile error:', error);
