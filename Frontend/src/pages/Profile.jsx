@@ -42,7 +42,11 @@ const Profile = () => {
     }
   };
 
-  console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))
+  if(user.createdAt){
+    console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))
+    console.log(new Date(user.createdAt).toISOString())
+    console.log("above console \n")
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -167,7 +171,7 @@ const Profile = () => {
                   <p className="text-lg font-semibold text-blue-900">
                     {user?.createdAt
                       ? new Date(user.createdAt).toISOString().replace("Z", "+00:00")
-                      : "no date"}
+                      : "no date found.."}
                   </p>
 
                   {user?.createdAt &&
