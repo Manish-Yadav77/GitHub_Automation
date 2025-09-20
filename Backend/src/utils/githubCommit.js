@@ -61,7 +61,33 @@ export const executeScheduledCommits = async () => {
         //   Math.random() < 1 / ((endTotalMinutes - startTotalMinutes) / 60) &&
         //   todayCommits < maxCommits;
           
-        const shouldCommit = todayCommits === 0 || (todayCommits < maxCommits && Math.random() < 0.3);
+        // const shouldCommit = todayCommits === 0 || (todayCommits < maxCommits && Math.random() < 0.3);
+
+        
+        // Ensure we're inside the selected window
+const inWindow =
+  currentTotalMinutes >= startTotalMinutes &&
+  currentTotalMinutes <= endTotalMinutes;
+
+// Deterministic test mode: if testing is enabled, always commit on the first eligible tick in the window,
+// regardless of earlier commits today. Turn this on temporarily during debugging.
+const testingMode = true; // set to false after verifying end-to-end
+
+// Cap enforcement: never exceed maxCommitsPerDay
+const underCap = todayCommits < maxCommits;
+
+// Hybrid logic:
+// - If testingMode: commit as soon as we're in the window and under daily cap.
+// - Otherwise: guarantee one commit per day, then use 30% chance for additional commits, all within the window and under cap.
+const shouldCommit =
+  inWindow &&
+  underCap &&
+  (
+    testingMode
+      ? true
+      : (todayCommits === 0 || Math.random() < 0.3)
+  );
+
 
 
         if (!shouldCommit) {
