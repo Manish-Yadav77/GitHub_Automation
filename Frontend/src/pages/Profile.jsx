@@ -163,7 +163,14 @@ const Profile = () => {
                 <div className="bg-blue-50 rounded-lg p-4">
                   <p className="text-sm font-medium text-blue-600">Member Since</p>
                   <p className="text-lg font-semibold text-blue-900">
-                    {new Date(user.createdAt).toISOString().replace('Z','+00:00')}
+                    {user?.createdAt
+        ? new Date(user.createdAt).toISOString().replace("Z", "+00:00")
+        : "no date"}
+
+        {
+          console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))
+          
+        }
                   </p>
                 </div>
                 
