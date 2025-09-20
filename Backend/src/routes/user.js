@@ -26,7 +26,7 @@ router.get('/profile', async (req, res) => {
         githubConnected: !!user.githubAccessToken,
         githubUsername: user.githubUsername,
         settings: user.settings,
-        createdAt: user.createdAt,
+        createdAt: user.createdAt?.toISOString(),
         isVerified: user.isVerified
       }
     });
