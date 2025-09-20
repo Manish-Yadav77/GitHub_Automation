@@ -42,11 +42,9 @@ const Profile = () => {
     }
   };
 
-  if(user){
-    console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))
-    // console.log(new Date(user.createdAt).toISOString())
-    console.log("above console \n")
-  }
+  console.log("User object:", user);
+console.log("CreatedAt value:", user?.createdAt);
+
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
