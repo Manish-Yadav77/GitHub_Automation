@@ -42,7 +42,7 @@ const Profile = () => {
     }
   };
 
-  if(user.createdAt){
+  if(user){
     console.log(new Date(user.createdAt).toISOString().replace("Z", "+00:00"))
     console.log(new Date(user.createdAt).toISOString())
     console.log("above console \n")
