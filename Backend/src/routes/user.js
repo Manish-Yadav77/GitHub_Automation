@@ -18,16 +18,7 @@ router.get('/profile', async (req, res) => {
 
     res.json({
       user: {
-        id: user._id,
-        email: user.email,
-        username: user.username,
-        avatar: user.avatar,
-        plan: user.plan,
-        githubConnected: !!user.githubAccessToken,
-        githubUsername: user.githubUsername,
-        settings: user.settings,
-        createdAt: user.createdAt?.toISOString(),
-        isVerified: user.isVerified
+        user
       }
     });
   } catch (error) {
