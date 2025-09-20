@@ -17,9 +17,7 @@ router.get('/profile', async (req, res) => {
     }
 
     res.json({
-      user: {
-        user
-      }
+      user
     });
   } catch (error) {
     console.error('Get profile error:', error);

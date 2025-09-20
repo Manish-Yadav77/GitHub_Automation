@@ -44,6 +44,7 @@ const Profile = () => {
 
   console.log("User object:", user);
 console.log("CreatedAt value:", user?.createdAt);
+console.log("new test");
 
 
   return (
