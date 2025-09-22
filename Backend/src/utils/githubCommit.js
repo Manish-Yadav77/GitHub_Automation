@@ -1,4 +1,5 @@
-// GitHub Commit Automation - src/utils/githubCommit.js
+// Fixed GitHub Commit Automation - src/utils/githubCommit.js
+
 import Automation from "../models/Automation.js";
 import CommitLog from "../models/CommitLog.js";
 import User from "../models/User.js";
@@ -18,14 +19,20 @@ export const executeScheduledCommits = async () => {
       .toString()
       .padStart(2, "0")}:${currentMinute.toString().padStart(2, "0")}`;
 
-    // Find active automations that should run now
+    console.log(`⏰ Checking automations at ${currentTime} on day ${currentDay}`);
+
+    // Find active automations that should run today
     const activeAutomations = await Automation.find({
       status: "active",
       "schedule.daysOfWeek": currentDay,
     }).populate("userId");
 
+    console.log(`📋 Found ${activeAutomations.length} active automations for today`);
+
     for (const automation of activeAutomations) {
       try {
+        console.log(`🔍 Processing automation ${automation._id} for repo ${automation.repoOwner}/${automation.repoName}`);
+
         // Check if current time is within the automation's time range
         const [startHour, startMinute] = automation.timeRange.startTime
           .split(":")
@@ -38,59 +45,58 @@ export const executeScheduledCommits = async () => {
         const endTotalMinutes = endHour * 60 + endMinute;
         const currentTotalMinutes = currentHour * 60 + currentMinute;
 
-        if (
-          currentTotalMinutes < startTotalMinutes ||
-          currentTotalMinutes > endTotalMinutes
-        ) {
+        console.log(`⏱️  Time window: ${startTotalMinutes}-${endTotalMinutes} mins, current: ${currentTotalMinutes} mins`);
+
+        // Check if we're within the time window
+        const inWindow = currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
+        
+        if (!inWindow) {
+          console.log(`⏰ Automation ${automation._id} - Outside time window, skipping`);
           continue;
         }
 
         // Check if we've already made commits today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
         const todayCommits = await CommitLog.countDocuments({
           automationId: automation._id,
           createdAt: { $gte: today },
           status: "success",
         });
 
-        // Determine if we should make a commit (random chance)
+        console.log(`📊 Today's commits: ${todayCommits}/${automation.maxCommitsPerDay}`);
+
+        // Enhanced commit logic for better testing and guaranteed daily commits
         const maxCommits = automation.maxCommitsPerDay;
-        // const shouldCommit =
-        //   Math.random() < 1 / ((endTotalMinutes - startTotalMinutes) / 60) &&
-        //   todayCommits < maxCommits;
-          
-        // const shouldCommit = todayCommits === 0 || (todayCommits < maxCommits && Math.random() < 0.3);
+        const underCap = todayCommits < maxCommits;
 
+        // Testing mode - more aggressive for quick testing
+        const testingMode = true; // Keep this true for now to test quickly
         
-        // Ensure we're inside the selected window
-const inWindow =
-  currentTotalMinutes >= startTotalMinutes &&
-  currentTotalMinutes <= endTotalMinutes;
+        let shouldCommit = false;
+        
+        if (testingMode) {
+          // In testing mode: commit immediately if in window and under cap
+          shouldCommit = inWindow && underCap;
+        } else {
+          // Production mode: guarantee at least 1 commit per day, then random chance for more
+          if (todayCommits === 0) {
+            // Always make at least 1 commit per day if we're in the window
+            shouldCommit = inWindow;
+          } else if (underCap) {
+            // For additional commits, use probability based on remaining time in window
+            const remainingMinutes = endTotalMinutes - currentTotalMinutes;
+            const remainingCommits = maxCommits - todayCommits;
+            // Higher probability when fewer commits remaining or less time left
+            const probability = Math.min(0.5, (remainingCommits / remainingMinutes) * 30);
+            shouldCommit = inWindow && Math.random() < probability;
+          }
+        }
 
-// Deterministic test mode: if testing is enabled, always commit on the first eligible tick in the window,
-// regardless of earlier commits today. Turn this on temporarily during debugging.
-const testingMode = true; // set to false after verifying end-to-end
-
-// Cap enforcement: never exceed maxCommitsPerDay
-const underCap = todayCommits < maxCommits;
-
-// Hybrid logic:
-// - If testingMode: commit as soon as we're in the window and under daily cap.
-// - Otherwise: guarantee one commit per day, then use 30% chance for additional commits, all within the window and under cap.
-const shouldCommit =
-  inWindow &&
-  underCap &&
-  (
-    testingMode
-      ? true
-      : (todayCommits === 0 || Math.random() < 0.3)
-  );
-
-
+        console.log(`🎯 Should commit: ${shouldCommit} (inWindow: ${inWindow}, underCap: ${underCap}, testingMode: ${testingMode})`);
 
         if (!shouldCommit) {
+          console.log(`⏭️  Automation ${automation._id} - Skipping commit this round`);
           continue;
         }
 
@@ -98,24 +104,31 @@ const shouldCommit =
         const user = await User.findById(automation.userId).select(
           "+githubAccessToken"
         );
+
         if (!user || !user.githubAccessToken) {
-          console.log(`No GitHub token for automation ${automation._id}`);
+          console.log(`❌ No GitHub token for automation ${automation._id}`);
           continue;
         }
 
+        console.log(`🚀 Executing commit for automation ${automation._id}...`);
+
         // Execute the commit
         await executeCommit(automation, user.githubAccessToken);
+
       } catch (error) {
-        console.error(`Error processing automation ${automation._id}:`, error);
+        console.error(`❌ Error processing automation ${automation._id}:`, error);
       }
     }
+
   } catch (error) {
-    console.error("Error in executeScheduledCommits:", error);
+    console.error("❌ Error in executeScheduledCommits:", error);
   }
 };
 
 const executeCommit = async (automation, accessToken) => {
   try {
+    console.log(`📝 Creating commit for ${automation.repoOwner}/${automation.repoName}`);
+
     const commitLog = new CommitLog({
       automationId: automation._id,
       userId: automation.userId,
@@ -137,7 +150,10 @@ const executeCommit = async (automation, accessToken) => {
         Math.floor(Math.random() * automation.commitPhrases.length)
       ];
 
+    console.log(`💬 Commit message: "${randomPhrase}"`);
+
     // Get current file content
+    console.log(`📖 Reading file: ${automation.targetFile}`);
     const { content: currentContent, sha } = await getFileContent(
       accessToken,
       automation.repoOwner,
@@ -149,6 +165,7 @@ const executeCommit = async (automation, accessToken) => {
     const newContent = generateCommitContent([randomPhrase], currentContent);
 
     // Create commit
+    console.log(`⬆️  Pushing commit...`);
     const result = await createOrUpdateFile(
       accessToken,
       automation.repoOwner,
@@ -164,7 +181,6 @@ const executeCommit = async (automation, accessToken) => {
     commitLog.commitSha = result.commit.sha;
     commitLog.status = "success";
     commitLog.metadata.executedTime = new Date();
-
     await commitLog.save();
 
     // Update automation statistics
@@ -176,15 +192,14 @@ const executeCommit = async (automation, accessToken) => {
       message: randomPhrase,
       sha: result.commit.sha,
     };
-
     await automation.save();
 
-    console.log(
-      `Commit successful for automation ${automation._id}: ${randomPhrase}`
-    );
-  } catch (error) {
-    console.error(`Commit failed for automation ${automation._id}:`, error);
+    console.log(`✅ Commit successful for automation ${automation._id}: ${randomPhrase}`);
+    console.log(`🔗 Commit SHA: ${result.commit.sha}`);
 
+  } catch (error) {
+    console.error(`❌ Commit failed for automation ${automation._id}:`, error);
+    
     // Save error to commit log
     const errorLog = await CommitLog.findOne({
       automationId: automation._id,
@@ -199,5 +214,8 @@ const executeCommit = async (automation, accessToken) => {
       };
       await errorLog.save();
     }
+    
+    // Rethrow to ensure error is logged at higher level
+    throw error;
   }
 };

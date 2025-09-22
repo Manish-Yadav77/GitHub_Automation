@@ -25,8 +25,9 @@ const CreateAutomation = () => {
       'Fix minor issues'
     ],
     schedule: {
-      daysOfWeek: [1, 2, 3, 4, 5] // Monday to Friday
-    }
+    daysOfWeek: selectedDays, // Array like [1,2,3,4,5] for Mon-Fri
+    timezone: 'UTC'
+  },
   });
 
   const [customPhrase, setCustomPhrase] = useState('');
