@@ -1,5 +1,5 @@
 // src/components/LoadingScreen.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,6 +27,7 @@ export default function LoadingScreen() {
   const [slogan, setSlogan] = useState(slogans[0]);
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(true);
+  const slowFillRef = useRef(null);
 
   // Cycle slogans every 3 seconds
   useEffect(() => {
@@ -36,21 +37,21 @@ export default function LoadingScreen() {
     return () => clearInterval(iv);
   }, []);
 
-  // Simulate progress fill until 95%, then wait for user to load
+  // Start slow fill interval
   useEffect(() => {
-    let iv = setInterval(() => {
-      setProgress(p => (p < 95 ? p + Math.random() * 5 : p));
+    slowFillRef.current = setInterval(() => {
+      setProgress((p) => (p < 95 ? p + Math.random() * 5 : p));
     }, 200);
-    return () => clearInterval(iv);
+    return () => clearInterval(slowFillRef.current);
   }, []);
 
-  // When user data arrives, fill to 100%, then fade out
+  // When user arrives, jump to 100%, clear slow fill, then fade out
   useEffect(() => {
     if (user) {
+      clearInterval(slowFillRef.current);
       setProgress(100);
-      // After bar fills, hide after 500ms
-      const to = setTimeout(() => setVisible(false), 800);
-      return () => clearTimeout(to);
+      const tid = setTimeout(() => setVisible(false), 800);
+      return () => clearTimeout(tid);
     }
   }, [user]);
 
