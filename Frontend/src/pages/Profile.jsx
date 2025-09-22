@@ -25,6 +25,53 @@ const Profile = () => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  const unwrapMongoDate = (value) => {
+  // Accept Date, ISO string, number, or Mongo extended JSON
+  try {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'number') return new Date(value);
+    if (typeof value === 'string') {
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    // Extended JSON: { $date: { $numberLong: "..." } } or { $date: 123456 }
+    if (value.$date) {
+      const inner = value.$date;
+      if (typeof inner === 'string' || typeof inner === 'number') {
+        const d = new Date(inner);
+        return isNaN(d.getTime()) ? null : d;
+      }
+      if (inner.$numberLong) {
+        const ms = Number(inner.$numberLong);
+        if (!Number.isNaN(ms)) {
+          const d = new Date(ms);
+          return isNaN(d.getTime()) ? null : d;
+        }
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const formatLocalDateTime = (dt) => {
+  if (!dt) return '—';
+  try {
+    return dt.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return '—';
+  }
+};
+
+
   // Derive GitHub connection status robustly
   const githubConnected = useMemo(() => {
     // Consider connected if there is a githubId or githubUsername or explicit flag
@@ -81,9 +128,15 @@ const Profile = () => {
   };
 
   // Derived account stats
-  const createdAtText = formatDate(user?.createdAt);
-  const planText = user?.plan ? String(user.plan) : 'free';
+  // const createdAtText = formatDate(user?.createdAt);
+  const planText = user?.plan ? String(user.plan) : 'free / NA';
+  // const verifiedText = user?.isVerified ? 'Verified' : 'Unverified';
+
+
   const verifiedText = user?.isVerified ? 'Verified' : 'Unverified';
+  const createdAtDate = unwrapMongoDate(user?.createdAt);
+  const createdAtText = formatLocalDateTime(createdAtDate);
+
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
