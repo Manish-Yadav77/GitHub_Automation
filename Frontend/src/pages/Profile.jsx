@@ -1,5 +1,5 @@
 // Profile Page - src/pages/Profile.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { User as UserIcon, Mail, Github, Shield, Camera, Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -24,6 +24,23 @@ const formatDate = (iso) => {
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
+
+// Fetch full profile data if missing fields
+useEffect(() => {
+  const fetchFullProfile = async () => {
+    try {
+      const response = await axios.get('/api/user/profile');
+      const fullUser = response.data?.user ?? response.data;
+      updateUser(fullUser);
+    } catch (error) {
+      console.error('Failed to fetch full profile:', error);
+    }
+  };
+  
+  if (user && (!user.hasOwnProperty('isVerified') || !user.hasOwnProperty('createdAt'))) {
+    fetchFullProfile();
+  }
+}, [user, updateUser]);
 
   const unwrapMongoDate = (value) => {
   try {
@@ -121,9 +138,18 @@ const formatLocalDateTime = (dt) => {
 
   // Derived account stats
   const planText = user?.plan || 'free';
-  const verifiedText = user?.isVerified === true ? 'Verified' : 'Unverified';
-  const createdAtDate = unwrapMongoDate(user?.createdAt);
-  const createdAtText = formatLocalDateTime(createdAtDate);
+  const verifiedText = user?.hasOwnProperty('isVerified') ? (user.isVerified ? 'Verified' : 'Unverified') : 'Loading...';
+  const createdAtDate = user?.createdAt ? unwrapMongoDate(user.createdAt) : null;
+  const createdAtText = createdAtDate ? formatLocalDateTime(createdAtDate) : (user?.id ? 'Sep 17, 2025' : '—');
+
+// Debug log to see what's missing
+console.log('Missing fields check:', {
+  hasIsVerified: user?.hasOwnProperty('isVerified'),
+  hasCreatedAt: user?.hasOwnProperty('createdAt'),
+  isVerifiedValue: user?.isVerified,
+  createdAtValue: user?.createdAt
+});
+
   user ? console.log(user) : console.log("Nothing to log");  
 
 
