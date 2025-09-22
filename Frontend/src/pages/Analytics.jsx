@@ -45,15 +45,13 @@ const Analytics = () => {
 
   const fetchAnalytics = async () => {
     try {
-      console.log(`Fetching analytics data for range: ${timeRange}`);
       setLoading(true);
       
       const response = await axios.get(`/api/automation/analytics?range=${timeRange}`).catch(error => {
         console.error('Error fetching analytics:', error.response?.data || error.message);
         throw error;
       });
-      
-      console.log('Analytics response:', response.data);
+
       setAnalytics(response.data);
     } catch (error) {
       console.error('Error fetching analytics:', error);
