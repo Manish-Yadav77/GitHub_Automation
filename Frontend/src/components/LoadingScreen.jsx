@@ -1,13 +1,13 @@
 // src/components/LoadingScreen.jsx
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const routeTitles = {
   '/dashboard': 'Dashboard',
   '/profile': 'Profile Settings',
   '/analytics': 'Analytics',
   '/settings': 'Settings',
-  // add more as needed
 };
 
 const slogans = [
@@ -22,8 +22,11 @@ const slogans = [
 export default function LoadingScreen() {
   const { pathname } = useLocation();
   const page = routeTitles[pathname] || 'App';
+  const { user } = useAuth();
+
   const [slogan, setSlogan] = useState(slogans[0]);
   const [progress, setProgress] = useState(0);
+  const [visible, setVisible] = useState(true);
 
   // Cycle slogans every 3 seconds
   useEffect(() => {
@@ -33,16 +36,28 @@ export default function LoadingScreen() {
     return () => clearInterval(iv);
   }, []);
 
-  // Simulate progress bar filling
+  // Simulate progress fill until 95%, then wait for user to load
   useEffect(() => {
-    const iv = setInterval(() => {
-      setProgress((p) => (p < 95 ? p + Math.random() * 5 : p));
+    let iv = setInterval(() => {
+      setProgress(p => (p < 95 ? p + Math.random() * 5 : p));
     }, 200);
     return () => clearInterval(iv);
   }, []);
 
+  // When user data arrives, fill to 100%, then fade out
+  useEffect(() => {
+    if (user) {
+      setProgress(100);
+      // After bar fills, hide after 500ms
+      const to = setTimeout(() => setVisible(false), 800);
+      return () => clearTimeout(to);
+    }
+  }, [user]);
+
+  if (!visible) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-tr from-indigo-100 to-purple-100 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-tr from-indigo-100 to-purple-100 overflow-hidden transition-opacity duration-500 ease-out">
       {/* Particle Background */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(50)].map((_, i) => (
@@ -83,12 +98,12 @@ export default function LoadingScreen() {
       {/* Progress Bar */}
       <div className="z-10 mt-6 w-64 sm:w-80 h-2 bg-white rounded-full overflow-hidden shadow-inner">
         <div
-          className="h-full bg-indigo-500 transition-all duration-200 ease-linear"
+          className="h-full bg-indigo-500 transition-all duration-500 ease-linear"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      {/* Keyframes for animations */}
+      {/* Animations */}
       <style jsx>{`
         @keyframes float {
           0% { transform: translateY(0) translateX(0); opacity: 0.2; }
@@ -105,7 +120,6 @@ export default function LoadingScreen() {
         .animate-bounce-slow {
           animation: bounce-slow 2s infinite;
         }
-        /* Delay classes */
         .delay-0s { animation-delay: 0s; }
         .delay-1s { animation-delay: 1s; }
         .delay-2s { animation-delay: 2s; }
