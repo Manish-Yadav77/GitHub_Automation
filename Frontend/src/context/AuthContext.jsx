@@ -1,154 +1,147 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+// Auth Context - src/context/AuthContext.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext();
 
-// Base URL already set elsewhere; ensure it's set before usage.
-// axios.defaults.baseURL is configured in your setup.
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://github-automation-8d48.onrender.com';
+
+// Configure axios defaults
+axios.defaults.baseURL = API_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);     // initial app load
-  const [ready, setReady] = useState(false);        // session ready to render protected routes
-  const meInFlight = useRef(false);
-  const mePromise = useRef(null);
+  const [loading, setLoading] = useState(true);
 
+  // Set auth token in axios headers
   const setAuthToken = (token) => {
     if (token) {
-      axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       localStorage.setItem('token', token);
     } else {
-      delete axios.defaults.headers.common.Authorization;
+      delete axios.defaults.headers.common['Authorization'];
       localStorage.removeItem('token');
     }
   };
 
-  const cacheUser = (u) => {
-    if (u) localStorage.setItem('user', JSON.stringify(u));
-    else localStorage.removeItem('user');
-  };
-
-  const getCachedUser = () => {
-    try { return JSON.parse(localStorage.getItem('user') || 'null'); }
-    catch { return null; }
-  };
-
-  // Debounced/me request with single-flight guard and small retry
-  const fetchMe = async () => {
-    if (meInFlight.current && mePromise.current) {
-      return mePromise.current;
-    }
-    meInFlight.current = true;
-    mePromise.current = (async () => {
-      try {
-        const res = await axios.get('/api/auth/me');
-        setUser(res.data);
-        cacheUser(res.data);
-        return { ok: true, data: res.data };
-      } catch (err) {
-        // Retry once on network hiccup (not on 401)
-        const status = err?.response?.status;
-        if (!status || status >= 500) {
-          try {
-            const res2 = await axios.get('/api/auth/me');
-            setUser(res2.data);
-            cacheUser(res2.data);
-            return { ok: true, data: res2.data };
-          } catch (e2) {
-            return { ok: false, error: e2 };
-          }
-        }
-        return { ok: false, error: err };
-      } finally {
-        meInFlight.current = false;
-        mePromise.current = null;
-      }
-    })();
-    return mePromise.current;
-  };
-
-  // Initial hydration on mount
+  // Initialize auth on app load
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const cached = getCachedUser();
-
-    if (token) setAuthToken(token);
-
-    // Optimistic hydrate from cache for instant UI; then background-validate
-    if (cached) {
-      setUser(cached);
-      setLoading(false);
-      setReady(true);
-      // background validate; if invalid, clear gracefully
-      fetchMe().then((r) => {
-        if (!r.ok) {
-          setUser(null);
-          cacheUser(null);
-          // Don’t toast on 401 silently; user will be redirected by protected route
+    const initAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        setAuthToken(token);
+        try {
+          const response = await axios.get('/api/auth/me');
+          setUser(response.data.user);
+        } catch (error) {
+          console.error('Auth initialization error:', error);
+          localStorage.removeItem('token');
+          delete axios.defaults.headers.common['Authorization'];
         }
-      });
-    } else if (token) {
-      // No cached user but token exists—validate quickly
-      (async () => {
-        const r = await fetchMe();
-        setLoading(false);
-        setReady(true);
-        if (!r.ok) {
-          setUser(null);
-          cacheUser(null);
-        }
-      })();
-    } else {
-      // Completely fresh
+      }
       setLoading(false);
-      setReady(true);
-    }
+    };
+
+    initAuth();
   }, []);
 
-  // LOGIN
-  const login = async ({ email, password }) => {
+  // Register function
+  const register = async (userData) => {
     try {
-      const res = await axios.post('/api/auth/login', { email, password });
-      const { token, user: u } = res.data || {};
-      if (!token || !u) throw new Error('Invalid login response');
+      setLoading(true);
+      const response = await axios.post('/api/auth/register', userData);
+      const { token, user: newUser } = response.data;
+      
       setAuthToken(token);
-      setUser(u);
-      cacheUser(u);
+      setUser(newUser);
+      toast.success('Account created successfully!');
       return { success: true };
-    } catch (err) {
-      const msg = err?.response?.data?.error || 'Login failed. Please try again.';
-      toast.error(msg);
-      return { success: false, error: msg };
+    } catch (error) {
+      const message = error.response?.data?.error || 'Registration failed';
+      toast.error(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
     }
   };
 
-  // GitHub OAuth completed in callback page; ensure it sets token+user to storage+axios too.
-
-  // LOGOUT
-  const logout = () => {
-    setAuthToken(null);
-    setUser(null);
-    cacheUser(null);
-  };
-
-  // REFRESH TOKEN (optional hook if backend issues short-lived tokens)
-  // You can call this before critical actions if your backend issues expiring JWTs.
-  const refreshSession = async () => {
+  // Login function
+  const login = async (credentials) => {
     try {
-      const r = await fetchMe();
-      return r.ok;
-    } catch {
-      return false;
+      setLoading(true);
+      const response = await axios.post('/api/auth/login', credentials);
+      const { token, user: loggedUser } = response.data;
+      
+      setAuthToken(token);
+      setUser(loggedUser);
+      toast.success('Logged in successfully!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.error || 'Login failed';
+      toast.error(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
     }
   };
 
-  const value = useMemo(() => ({
-    user, loading, ready,
-    login, logout, refreshSession,
-  }), [user, loading, ready]);
+  // GitHub OAuth login
+  const loginWithGitHub = async (code) => {
+    try {
+      setLoading(true);
+      const response = await axios.post('/api/auth/github/callback', { code });
+      const { token, user: githubUser } = response.data;
+      
+      setAuthToken(token);
+      setUser(githubUser);
+      toast.success('GitHub authentication successful!');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.error || 'GitHub authentication failed';
+      toast.error(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    try {
+      await axios.post('/api/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setAuthToken(null);
+      setUser(null);
+      toast.success('Logged out successfully!');
+    }
+  };
+
+  // Update user function
+  const updateUser = (updatedUserData) => {
+    setUser(prev => ({ ...prev, ...updatedUserData }));
+  };
+
+  const value = {
+    user,
+    loading,
+    register,
+    login,
+    loginWithGitHub,
+    logout,
+    updateUser,
+    setLoading
+  };
 
   return (
     <AuthContext.Provider value={value}>
