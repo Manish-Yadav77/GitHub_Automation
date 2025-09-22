@@ -133,7 +133,7 @@ const formatLocalDateTime = (dt) => {
   // const verifiedText = user?.isVerified ? 'Verified' : 'Unverified';
 
 
-  const verifiedText = user?.isVerified ? 'Verified' : 'Unverifieds';
+  const verifiedText = user?.isVerified ? 'Verified' : 'Unverified';
   const createdAtDate = unwrapMongoDate(user?.createdAt);
   const createdAtText = formatLocalDateTime(createdAtDate);
 
@@ -185,7 +185,7 @@ const formatLocalDateTime = (dt) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Username
                   </label>
-                  <div className="relative text-center">
+                  <div className="relative items-center">
                     <UserIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                     <input
                       type="text"
@@ -201,7 +201,7 @@ const formatLocalDateTime = (dt) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email
                   </label>
-                  <div className="relative text-center">
+                  <div className="relative items-centerr">
                     <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                     <input
                       type="email"
