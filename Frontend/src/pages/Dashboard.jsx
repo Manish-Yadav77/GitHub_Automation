@@ -16,6 +16,7 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import NextCommitBanner from '../components/NextCommitBanner';
+import LoadingScreen from '../components/LoadingScreen';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://github-automation-8d48.onrender.com';
@@ -51,7 +52,6 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      console.log('Fetching dashboard data...');
       setLoading(true);
 
       // Make API calls with proper error handling
@@ -65,9 +65,6 @@ const Dashboard = () => {
           throw error;
         })
       ]);
-
-      console.log('Automations response:', automationsRes.data);
-      console.log('Stats response:', statsRes.data);
 
       setAutomations(automationsRes.data.automations || []);
       setStats(statsRes.data || {
@@ -86,13 +83,9 @@ const Dashboard = () => {
 
   const handleStatusChange = async (automationId, newStatus) => {
     try {
-      console.log(`Changing automation ${automationId} status to ${newStatus}`);
-
       const response = await axios.patch(`/api/automation/${automationId}/status`, {
         status: newStatus
       });
-
-      console.log('Status change response:', response.data);
 
       setAutomations(prev =>
         prev.map(auto =>
@@ -114,10 +107,7 @@ const Dashboard = () => {
     }
 
     try {
-      console.log(`Deleting automation ${automationId}`);
-
       await axios.delete(`/api/automation/${automationId}`);
-
       setAutomations(prev => prev.filter(auto => auto._id !== automationId));
       toast.success('Automation deleted successfully');
     } catch (error) {
@@ -137,12 +127,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-16">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
+      <LoadingScreen/>
     );
   }
 

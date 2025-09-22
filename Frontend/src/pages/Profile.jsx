@@ -26,7 +26,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
 
 // Fetch full profile data if missing fields
-useEffect(() => {
+  useEffect(() => {
   const fetchFullProfile = async () => {
     try {
       const response = await axios.get('/api/user/profile');
@@ -67,7 +67,7 @@ useEffect(() => {
   }
 };
 
-const formatLocalDateTime = (dt) => {
+  const formatLocalDateTime = (dt) => {
   if (!dt) return '—';
   try {
     return dt.toLocaleString(undefined, {
@@ -79,7 +79,6 @@ const formatLocalDateTime = (dt) => {
     return '—';
   }
 };
-
 
   // Derive GitHub connection status robustly
   const githubConnected = useMemo(() => {
@@ -142,17 +141,6 @@ const formatLocalDateTime = (dt) => {
   const createdAtDate = user?.createdAt ? unwrapMongoDate(user.createdAt) : null;
   const createdAtText = createdAtDate ? formatLocalDateTime(createdAtDate) : (user?.id ? 'Sep 17, 2025' : '—');
 
-// Debug log to see what's missing
-console.log('Missing fields check:', {
-  hasIsVerified: user?.hasOwnProperty('isVerified'),
-  hasCreatedAt: user?.hasOwnProperty('createdAt'),
-  isVerifiedValue: user?.isVerified,
-  createdAtValue: user?.createdAt
-});
-
-  user ? console.log(user) : console.log("Nothing to log");  
-
-
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8">
@@ -166,8 +154,8 @@ console.log('Missing fields check:', {
 
           <div className="p-4 sm:p-6 md:p-8">
             {/* Header: Avatar + Summary */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8 absolute">
+              <div className="relative ">
                 <img
                   className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-2 ring-blue-100"
                   src={avatarSrc}

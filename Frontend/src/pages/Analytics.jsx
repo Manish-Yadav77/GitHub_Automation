@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Calendar, TrendingUp, GitCommit, Clock, Filter } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import LoadingScreen from '../components/LoadingScreen';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://github-automation-8d48.onrender.com';
@@ -66,12 +67,7 @@ const Analytics = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-16">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
-        </div>
-      </div>
+      <LoadingScreen/>
     );
   }
 

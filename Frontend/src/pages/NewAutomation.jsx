@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { User } from "@/entities/User";
 import { Automation } from "@/entities/Automation";
+import LoadingScreen from "../components/LoadingScreen";
 
 const neomorphicStyles = {
   background: '#e0e0e0',
@@ -118,11 +119,7 @@ export default function NewAutomation() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-screen">
-        <div style={neomorphicStyles} className="p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
-        </div>
-      </div>
+      <LoadingScreen/>
     );
   }
 

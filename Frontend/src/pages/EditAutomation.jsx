@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Github, Clock, Settings, MessageSquare, Save, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import LoadingScreen from '../components/LoadingScreen';
 
 const EditAutomation = () => {
   const navigate = useNavigate();
@@ -167,9 +168,7 @@ const EditAutomation = () => {
 
   if (fetchLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-16">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
+      <LoadingScreen/>
     );
   }
 

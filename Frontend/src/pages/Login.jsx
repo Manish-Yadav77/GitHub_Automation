@@ -34,7 +34,6 @@ const Login = () => {
   window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
 };
 
-
   const handleChange = (e) => {
     setFormData(prev => ({
       ...prev,
