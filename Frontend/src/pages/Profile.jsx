@@ -124,6 +124,7 @@ const formatLocalDateTime = (dt) => {
   const verifiedText = user?.isVerified === true ? 'Verified' : 'Unverified';
   const createdAtDate = unwrapMongoDate(user?.createdAt);
   const createdAtText = formatLocalDateTime(createdAtDate);
+  user ? console.log(user) : console.log("Nothing to log");  
 
 
   return (
