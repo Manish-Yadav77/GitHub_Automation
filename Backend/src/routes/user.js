@@ -16,9 +16,6 @@ router.get('/profile', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log(user);
-    
-
     res.json({
       user: {
         id: user._id,
@@ -26,8 +23,9 @@ router.get('/profile', async (req, res) => {
         username: user.username,
         avatar: user.avatar,
         plan: user.plan,
-        githubConnected: !!user.githubAccessToken,
+        githubConnected: !!(user.githubAccessToken || user.githubId || user.githubUsername),
         githubUsername: user.githubUsername,
+        githubId: user.githubId,
         settings: user.settings,
         createdAt: user.createdAt?.toISOString(),
         isVerified: user.isVerified

@@ -50,40 +50,40 @@ export const AuthProvider = ({ children }) => {
 
   // New: single-flight /me with one soft retry on network/server hiccup
   const fetchMe = async () => {
-    if (meInFlight.current && mePromise.current) {
-      return mePromise.current;
-    }
-    meInFlight.current = true;
-    mePromise.current = (async () => {
-      try {
-        const res = await axios.get('/api/auth/me');
-        // Some backends return {user: {...}}, others return user directly
-        const u = res.data?.user ?? res.data;
-        setUser(u);
-        cacheUser(u);
-        return { ok: true, data: u };
-      } catch (err) {
-        const status = err?.response?.status;
-        // Retry once for transient issues (no status or 5xx)
-        if (!status || status >= 500) {
-          try {
-            const res2 = await axios.get('/api/auth/me');
-            const u2 = res2.data?.user ?? res2.data;
-            setUser(u2);
-            cacheUser(u2);
-            return { ok: true, data: u2 };
-          } catch (e2) {
-            return { ok: false, error: e2 };
-          }
-        }
-        return { ok: false, error: err };
-      } finally {
-        meInFlight.current = false;
-        mePromise.current = null;
-      }
-    })();
+  if (meInFlight.current && mePromise.current) {
     return mePromise.current;
-  };
+  }
+  meInFlight.current = true;
+  mePromise.current = (async () => {
+    try {
+      const res = await axios.get('/api/auth/me');
+      // FIX: Extract user from nested response
+      const u = res.data?.user ?? res.data;
+      setUser(u);
+      cacheUser(u);
+      return { ok: true, data: u };
+    } catch (err) {
+      const status = err?.response?.status;
+      if (!status || status >= 500) {
+        try {
+          const res2 = await axios.get('/api/auth/me');
+          // FIX: Extract user from nested response here too
+          const u2 = res2.data?.user ?? res2.data;
+          setUser(u2);
+          cacheUser(u2);
+          return { ok: true, data: u2 };
+        } catch (e2) {
+          return { ok: false, error: e2 };
+        }
+      }
+      return { ok: false, error: err };
+    } finally {
+      meInFlight.current = false;
+      mePromise.current = null;
+    }
+  })();
+  return mePromise.current;
+};
 
   // Initialize auth on app load (keeps your behavior, adds cache+background validation)
   useEffect(() => {
