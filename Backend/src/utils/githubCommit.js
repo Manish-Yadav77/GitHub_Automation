@@ -150,6 +150,8 @@ const executeCommit = async (automation, accessToken) => {
         Math.floor(Math.random() * automation.commitPhrases.length)
       ];
 
+      randomPhrase + '\n\n';
+
     console.log(`💬 Commit message: "${randomPhrase}"`);
 
     // Get current file content

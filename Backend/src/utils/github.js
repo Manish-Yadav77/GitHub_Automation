@@ -108,24 +108,31 @@ export const getRepositoryContents = async (accessToken, owner, repo, path = '')
 };
 
 // Create or update file in repository
-export const createOrUpdateFile = async (accessToken, owner, repo, path, content, message, sha = null) => {
+export const createOrUpdateFile = async (accessToken, owner, repo, path, content, message, sha = null, branch = 'main') => {
   try {
     const data = {
       message,
-      content: Buffer.from(content).toString('base64')
+      content: Buffer.from(content).toString('base64'),
+      branch
+      // Do NOT set committer/author to let GitHub attribute to token owner
     };
 
-    if (sha) {
-      data.sha = sha;
-    }
+    if (sha) data.sha = sha;
 
-    const response = await axios.put(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, data, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'GitHub-Automation-App'
+    const response = await axios.put(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'GitHub-Automation-App'
+        }
       }
-    });
+    );
+
+    // Optional: log author email/login from response for verification
+    // console.log(response.data.commit?.author, response.data.commit?.committer);
 
     return response.data;
   } catch (error) {
@@ -161,15 +168,6 @@ export const getFileContent = async (accessToken, owner, repo, path) => {
 };
 
 // Generate random commit content
-// export const generateCommitContent = (phrases, existingContent) => {
-//   const timestamp = new Date().toISOString();
-//   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-  
-//   // Add content to existing file
-//   const newLine = `\n<!-- ${randomPhrase} - ${timestamp} -->`;
-//   return existingContent + newLine;
-// };
-
 
 export const generateCommitContent = (phrases, existingContent) => {
   const timestamp = new Date().toISOString();
