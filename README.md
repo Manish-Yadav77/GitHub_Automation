@@ -96,25 +96,45 @@ Test credentials available on the demo site for exploration.
 ## 📁 Project Structure
 
 AutoGit/
-├── Backend/ # Node.js API Server
-│ ├── src/
-│ │ ├── middleware/ # Auth & validation middleware
+
+├── Backend/ # Node.js API Server 
+
+│ ├── src/ 
+
+│ │ ├── middleware/ # Auth & validation middleware 
+
 │ │ ├── models/ # MongoDB schemas
+
 │ │ ├── routes/ # API endpoints
+
 │ │ ├── utils/ # GitHub integration utilities
+
 │ │ └── server.js # Express app entry point
+
 │ ├── package.json
+
 │ └── .env # Environment variables
+
 ├── Frontend/ # React SPA
+
 │ ├── src/
+
 │ │ ├── components/ # Reusable UI components
+
 │ │ ├── context/ # React context providers
+
 │ │ ├── pages/ # Route components
+
 │ │ ├── utils/ # Helper functions
+
 │ │ └── App.jsx # Main app component
+
 │ ├── public/ # Static assets
+
 │ ├── package.json
+
 │ └── .env # Environment variables
+
 └── README.md
 
 ## 🚀 Installation
