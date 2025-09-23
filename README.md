@@ -4,7 +4,7 @@
   <img src="Frontend/public/logo.png" alt="AutoGit Logo" width="200"/>
   
   [![Live Demo](https://img.shields.io/badge/Demo-Live-success?style=for-the-badge)](https://autocommitor.netlify.app/)
-  [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/Manish-Yadav77/autogit)
+  [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/Manish-Yadav77/GitHub_Automation)
   [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 </div>
 
