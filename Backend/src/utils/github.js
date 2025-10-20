@@ -1,5 +1,6 @@
 // Fixed GitHub Utilities - src/utils/github.js
 import axios from 'axios';
+import User from '../models/User.js';
 
 // Get GitHub access token from code
 export const getGitHubAccessToken = async (code) => {
@@ -168,10 +169,44 @@ export const getFileContent = async (accessToken, owner, repo, path) => {
 };
 
 // Generate random commit content
-
 export const generateCommitContent = (phrases, existingContent) => {
   const timestamp = new Date().toISOString();
   const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
   const comment = `<!-- ${randomPhrase} - ${timestamp} -->`;
   return existingContent + `\n${comment}`;
+};
+
+// Token validation with error handling
+export const validateGitHubToken = async (accessToken) => {
+  try {
+    const response = await axios.get('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'GitHub-Automation-App'
+      }
+    });
+    return { valid: true, data: response.data };
+  } catch (error) {
+    if (error.response?.status === 401) {
+      console.error('❌ GitHub token is invalid or expired');
+      return { valid: false, reason: 'Token expired or invalid' };
+    }
+    return { valid: false, reason: error.message };
+  }
+};
+
+// Retry wrapper for GitHub API calls with token validation
+export const withTokenValidation = async (apiCall, userId, accessToken) => {
+  try {
+    return await apiCall(accessToken);
+  } catch (error) {
+    // Check if it's a 401 (unauthorized) error
+    if (error.response?.status === 401) {
+      console.error(`⚠️  Token invalid for user ${userId}, may need re-authentication`);
+      // In future: implement token refresh from refresh token
+      // For now, log the error so admin can see and request re-auth
+      throw new Error(`GitHub token expired. Please re-authenticate on AutoGit.`);
+    }
+    throw error;
+  }
 };

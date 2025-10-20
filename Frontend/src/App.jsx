@@ -1,9 +1,10 @@
 // Frontend Main App - src/App.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/AuthContext';
+import keepAliveService from './services/keepAliveService';
 
 // Import components
 import Navbar from './components/Navbar';
@@ -53,6 +54,19 @@ const PublicRoute = ({ children }) => {
 
 function AppContent() {
   const { user } = useAuth();
+
+  // Start keep-alive service to prevent backend from sleeping
+  useEffect(() => {
+    if (!keepAliveService.isRunning) {
+      keepAliveService.start();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      // Note: we don't stop the service on unmount because we want continuous pings
+      // keepAliveService.stop();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">

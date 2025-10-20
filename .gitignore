@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 .env
+.zencoder
+ARCHITECTURE_VISUAL.md
+COMPLETE_IMPLEMENTATION_GUIDE.md
+EXECUTIVE_SUMMARY.md
+FIXES_APPLIED.md
+QUICK_REFERENCE.md
+START_HERE.md
 
 # Editor directories and files
 .vscode/*

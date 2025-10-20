@@ -9,17 +9,51 @@ import {
   generateCommitContent,
 } from "./github.js";
 
+// Helper function to convert UTC time to user timezone time
+const convertUTCToTimezone = (utcDate, timezone) => {
+  try {
+    // Get the UTC time string
+    const utcString = utcDate.toLocaleString('en-US', { timeZone: 'UTC' });
+    const utcTime = new Date(utcString);
+    
+    // Get the time in user's timezone
+    const tzString = utcDate.toLocaleString('en-US', { timeZone: timezone });
+    const tzTime = new Date(tzString);
+    
+    // Calculate offset
+    const offset = tzTime.getTime() - utcTime.getTime();
+    
+    // Apply offset to UTC date
+    const converted = new Date(utcDate.getTime() + offset);
+    return {
+      hours: converted.getHours(),
+      minutes: converted.getMinutes(),
+      day: converted.getDay()
+    };
+  } catch (error) {
+    console.error(`Error converting timezone ${timezone}:`, error);
+    // Fallback to UTC
+    return {
+      hours: utcDate.getHours(),
+      minutes: utcDate.getMinutes(),
+      day: utcDate.getDay()
+    };
+  }
+};
+
 export const executeScheduledCommits = async () => {
   try {
     const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const currentDay = now.getDay();
+    
+    // Use UTC for default (this will be fixed per-user timezone)
+    const currentHour = now.getUTCHours();
+    const currentMinute = now.getUTCMinutes();
+    const currentDay = now.getUTCDay();
     const currentTime = `${currentHour
       .toString()
       .padStart(2, "0")}:${currentMinute.toString().padStart(2, "0")}`;
 
-    console.log(`⏰ Checking automations at ${currentTime} on day ${currentDay}`);
+    console.log(`⏰ Checking automations at ${currentTime} UTC on day ${currentDay}`);
 
     // Find active automations that should run today
     const activeAutomations = await Automation.find({
@@ -33,6 +67,28 @@ export const executeScheduledCommits = async () => {
       try {
         console.log(`🔍 Processing automation ${automation._id} for repo ${automation.repoOwner}/${automation.repoName}`);
 
+        // Get user's timezone (default to UTC if not set)
+        const userTimezone = automation.userId?.settings?.preferences?.timezone || automation.schedule?.timezone || 'UTC';
+        
+        // Convert current time to user's timezone
+        const userTime = convertUTCToTimezone(now, userTimezone);
+        const userHour = userTime.hours;
+        const userMinute = userTime.minutes;
+        const userDay = userTime.day;
+
+        console.log(`🌍 User timezone: ${userTimezone}, Local time: ${userHour.toString().padStart(2, '0')}:${userMinute.toString().padStart(2, '0')} (day ${userDay})`);
+
+        // Check if today is a scheduled day (using user's local day)
+        const scheduledDays = automation.schedule?.daysOfWeek || [];
+        const isScheduledDay = scheduledDays.includes(userDay);
+        
+        if (!isScheduledDay) {
+          console.log(`⏭️  Automation ${automation._id} - Not a scheduled day. Scheduled: [${scheduledDays.join(',')}], Current: ${userDay}`);
+          continue;
+        }
+        
+        console.log(`✅ Automation ${automation._id} - Scheduled day matched (${userDay})`);
+
         // Check if current time is within the automation's time range
         const [startHour, startMinute] = automation.timeRange.startTime
           .split(":")
@@ -43,11 +99,11 @@ export const executeScheduledCommits = async () => {
 
         const startTotalMinutes = startHour * 60 + startMinute;
         const endTotalMinutes = endHour * 60 + endMinute;
-        const currentTotalMinutes = currentHour * 60 + currentMinute;
+        const currentTotalMinutes = userHour * 60 + userMinute;
 
-        console.log(`⏱️  Time window: ${startTotalMinutes}-${endTotalMinutes} mins, current: ${currentTotalMinutes} mins`);
+        console.log(`⏱️  Time window: ${startTotalMinutes}-${endTotalMinutes} mins, user local: ${currentTotalMinutes} mins`);
 
-        // Check if we're within the time window
+        // Check if we're within the time window (using user's local time)
         const inWindow = currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
         
         if (!inWindow) {
@@ -70,8 +126,8 @@ export const executeScheduledCommits = async () => {
         const maxCommits = automation.maxCommitsPerDay;
         const underCap = todayCommits < maxCommits;
 
-        // Testing mode - more aggressive for quick testing
-        const testingMode = true; // Keep this true for now to test quickly
+        // Testing mode - more aggressive in development, realistic in production
+        const testingMode = process.env.NODE_ENV === 'development';
         
         let shouldCommit = false;
         
@@ -150,9 +206,10 @@ const executeCommit = async (automation, accessToken) => {
         Math.floor(Math.random() * automation.commitPhrases.length)
       ];
 
-      randomPhrase + '\n\n';
+    // Add website attribution to maintain brand visibility
+    const commitMessageWithAttribution = `${randomPhrase}\n\n🤖 Auto-committed via https://autocommitor.netlify.app`;
 
-    console.log(`💬 Commit message: "${randomPhrase}"`);
+    console.log(`💬 Commit message: "${commitMessageWithAttribution}"`);
 
     // Get current file content
     console.log(`📖 Reading file: ${automation.targetFile}`);
@@ -166,7 +223,7 @@ const executeCommit = async (automation, accessToken) => {
     // Generate new content
     const newContent = generateCommitContent([randomPhrase], currentContent);
 
-    // Create commit
+    // Create commit (use the message with attribution for the actual commit)
     console.log(`⬆️  Pushing commit...`);
     const result = await createOrUpdateFile(
       accessToken,
@@ -174,12 +231,12 @@ const executeCommit = async (automation, accessToken) => {
       automation.repoName,
       automation.targetFile,
       newContent,
-      randomPhrase,
+      commitMessageWithAttribution,
       sha
     );
 
-    // Update commit log
-    commitLog.commitMessage = randomPhrase;
+    // Update commit log (store both original message and with attribution)
+    commitLog.commitMessage = commitMessageWithAttribution;
     commitLog.commitSha = result.commit.sha;
     commitLog.status = "success";
     commitLog.metadata.executedTime = new Date();
@@ -188,7 +245,7 @@ const executeCommit = async (automation, accessToken) => {
     // Update automation statistics
     await automation.incrementCommitCount();
 
-    // Update last commit info
+    // Update last commit info (store original phrase for UI display)
     automation.lastCommit = {
       timestamp: new Date(),
       message: randomPhrase,
@@ -196,7 +253,7 @@ const executeCommit = async (automation, accessToken) => {
     };
     await automation.save();
 
-    console.log(`✅ Commit successful for automation ${automation._id}: ${randomPhrase}`);
+    console.log(`✅ Commit successful for automation ${automation._id}: ${commitMessageWithAttribution}`);
     console.log(`🔗 Commit SHA: ${result.commit.sha}`);
 
   } catch (error) {

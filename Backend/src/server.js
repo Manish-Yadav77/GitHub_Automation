@@ -59,7 +59,37 @@ app.use('/api/repos', authenticateToken, repoRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV
+  });
+});
+
+// Keep-alive ping endpoint (prevents Render.com free tier from sleeping)
+app.get('/api/ping', (req, res) => {
+  res.json({ 
+    message: 'pong',
+    timestamp: new Date().toISOString(),
+    cronJobsActive: true
+  });
+});
+
+// Detailed health status for monitoring
+app.get('/api/health/detailed', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    cronJobsStatus: 'active',
+    memory: {
+      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+    }
+  });
 });
 
 // Debug route to trigger commits manually (for testing)
