@@ -25,7 +25,8 @@ export const getGitHubAccessToken = async (code) => {
     return response.data.access_token;
   } catch (error) {
     console.error('Error getting GitHub access token:', error.response?.data || error.message);
-    throw new Error('Failed to get access token');
+    const githubError = error.response?.data?.error || error.response?.data?.error_description;
+    throw new Error(githubError || 'Failed to get access token');
   }
 };
 

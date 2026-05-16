@@ -16,7 +16,7 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import NextCommitBanner from '../components/NextCommitBanner';
-import LoadingScreen from '../components/LoadingScreen';
+import { PageSkeleton } from '../components/Skeleton';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://github-automation-8d48.onrender.com';
@@ -126,9 +126,7 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return (
-      <LoadingScreen/>
-    );
+    return <PageSkeleton rows={4} />;
   }
 
   return (

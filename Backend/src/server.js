@@ -26,9 +26,10 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
-      styleSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       imgSrc: ["'self'", 'data:'],
       connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       frameSrc: ["'none'"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],
@@ -78,6 +79,24 @@ app.use('/api/badges', authenticateToken, badgeRoutes);
 app.use('/api/jobs', authenticateToken, jobRoutes);
 app.use('/api/repos', authenticateToken, repoRoutes);
 app.use('/api/user', authenticateToken, userRoutes);
+
+app.get('/', (req, res) => {
+  res.type('html').send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AutoGit API</title>
+  </head>
+  <body>
+    <main>
+      <h1>AutoGit API</h1>
+      <p>Status: online</p>
+      <p>Health: <a href="/api/health">/api/health</a></p>
+    </main>
+  </body>
+</html>`);
+});
 
 app.get('/api/health', (req, res) => {
   res.json({

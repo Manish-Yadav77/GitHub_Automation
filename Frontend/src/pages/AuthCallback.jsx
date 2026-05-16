@@ -1,5 +1,5 @@
 // Auth Callback Page - src/pages/AuthCallback.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -8,9 +8,13 @@ const AuthCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { loginWithGitHub } = useAuth();
+  const handledRef = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
+      if (handledRef.current) return;
+      handledRef.current = true;
+
       const code = searchParams.get('code');
       const error = searchParams.get('error');
 

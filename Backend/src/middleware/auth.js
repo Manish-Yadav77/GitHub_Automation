@@ -203,7 +203,9 @@ export default {
 };
 
 export const requireJson = (req, res, next) => {
-  if (['POST', 'PUT', 'PATCH'].includes(req.method) && !req.is('application/json')) {
+  const hasBody = Number(req.headers['content-length'] || 0) > 0 || req.headers['transfer-encoding'];
+
+  if (['POST', 'PUT', 'PATCH'].includes(req.method) && hasBody && !req.is('application/json')) {
     return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
   next();

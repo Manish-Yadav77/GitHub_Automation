@@ -166,8 +166,14 @@ router.post('/', [
 
     const existingAutomation = await Automation.findOne({ userId: req.userId });
     if (existingAutomation) {
-      return res.status(400).json({
-        error: 'Free mode allows one selected repository at a time. Deactivate the current repo before selecting another.'
+      const automation = await Automation.findOneAndUpdate(
+        { _id: existingAutomation._id, userId: req.userId },
+        { ...req.body, userId: req.userId },
+        { new: true, runValidators: true }
+      );
+      return res.json({
+        automation,
+        message: 'Selected repository updated. Free mode keeps one active repository.'
       });
     }
 

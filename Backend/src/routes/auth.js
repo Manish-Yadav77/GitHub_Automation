@@ -151,8 +151,6 @@ router.post('/github/callback', async (req, res) => {
       return res.status(400).json({ error: 'Authorization code required' });
     }
 
-    console.log('Processing GitHub OAuth with code:', code);
-
     // Exchange code for access token
     const accessToken = await getGitHubAccessToken(code);
     console.log('Received access token successfully');
@@ -235,8 +233,11 @@ router.post('/github/callback', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('GitHub auth error:', error);
-    res.status(500).json({ error: 'GitHub authentication failed' });
+    console.error('GitHub auth error:', error.message);
+    const message = error.message?.includes('bad_verification_code')
+      ? 'GitHub authorization code was already used. Please try signing in again.'
+      : 'GitHub authentication failed';
+    res.status(400).json({ error: message });
   }
 });
 

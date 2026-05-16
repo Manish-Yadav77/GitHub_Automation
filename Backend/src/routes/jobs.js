@@ -30,9 +30,13 @@ router.get('/pending', async (req, res) => {
 });
 
 router.post('/generate-today', async (req, res) => {
-  await generateDailyJobs();
-  const jobs = await Job.find({ userId: req.userId }).sort({ scheduledAt: -1 }).limit(25);
-  res.json({ message: 'Today jobs generated.', jobs });
+  try {
+    await generateDailyJobs();
+    const jobs = await Job.find({ userId: req.userId }).sort({ scheduledAt: -1 }).limit(25);
+    res.json({ message: 'Today jobs generated.', jobs });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Failed to generate jobs' });
+  }
 });
 
 router.post('/:id/retry', async (req, res) => {

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Award, GitPullRequest, HelpCircle, RefreshCw, ShieldCheck, Sparkles, Star, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/axios';
-import LoadingScreen from '../components/LoadingScreen';
+import { PageSkeleton } from '../components/Skeleton';
 
 const iconMap = {
   pull_shark: GitPullRequest,
@@ -47,7 +47,7 @@ const Badges = () => {
   const refresh = async () => {
     try {
       setRefreshing(true);
-      const response = await api.post('/api/badges/refresh');
+      const response = await api.post('/api/badges/refresh', {});
       setProgress(response.data.progress || []);
       toast.success('Badge progress refreshed');
     } catch (error) {
@@ -60,7 +60,7 @@ const Badges = () => {
   const trigger = async (type) => {
     try {
       setTriggering(type);
-      const response = await api.post(`/api/badges/trigger/${type}`);
+      const response = await api.post(`/api/badges/trigger/${type}`, {});
       toast.success(response.data.message || 'Badge action completed');
       await loadBadges();
     } catch (error) {
@@ -70,7 +70,7 @@ const Badges = () => {
     }
   };
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <PageSkeleton rows={7} />;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">

@@ -21,29 +21,37 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/refresh', refreshLimiter, async (req, res) => {
-  const progress = await refreshBadgeProgress(req.userId);
-  res.json({ progress });
+  try {
+    const progress = await refreshBadgeProgress(req.userId);
+    res.json({ progress });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Failed to refresh badge progress' });
+  }
 });
 
 router.post('/trigger/:type', async (req, res) => {
-  const automation = await Automation.findOne({ userId: req.userId, status: { $ne: 'stopped' } }).populate('userId');
-  if (!automation) {
-    return res.status(400).json({ error: 'Select and activate one repository first.' });
-  }
+  try {
+    const automation = await Automation.findOne({ userId: req.userId, status: { $ne: 'stopped' } }).populate('userId');
+    if (!automation) {
+      return res.status(400).json({ error: 'Select and activate one repository first.' });
+    }
 
-  if (req.params.type === 'quickdraw') {
-    const issue = await runQuickdraw(automation);
-    await refreshBadgeProgress(req.userId);
-    return res.json({ message: 'Quickdraw issue opened and closed.', issueNumber: issue.number });
-  }
+    if (req.params.type === 'quickdraw') {
+      const issue = await runQuickdraw(automation);
+      await refreshBadgeProgress(req.userId);
+      return res.json({ message: 'Quickdraw issue opened and closed.', issueNumber: issue.number });
+    }
 
-  if (req.params.type === 'pr_cycle') {
-    const result = await runPrCycle(automation);
-    await refreshBadgeProgress(req.userId);
-    return res.json({ message: 'Pull request cycle completed.', pullNumber: result.pr.number });
-  }
+    if (req.params.type === 'pr_cycle') {
+      const result = await runPrCycle(automation);
+      await refreshBadgeProgress(req.userId);
+      return res.json({ message: 'Pull request cycle completed.', pullNumber: result.pr.number });
+    }
 
-  return res.status(400).json({ error: 'Unsupported badge trigger.' });
+    return res.status(400).json({ error: 'Unsupported badge trigger.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Badge action failed' });
+  }
 });
 
 export default router;

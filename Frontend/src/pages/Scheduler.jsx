@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CalendarClock, RefreshCw, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/axios';
-import LoadingScreen from '../components/LoadingScreen';
+import { PageSkeleton } from '../components/Skeleton';
 
 const Scheduler = () => {
   const [jobs, setJobs] = useState([]);
@@ -27,7 +27,7 @@ const Scheduler = () => {
   const generateToday = async () => {
     try {
       setWorking(true);
-      const response = await api.post('/api/jobs/generate-today');
+      const response = await api.post('/api/jobs/generate-today', {});
       setJobs(response.data.jobs || []);
       toast.success('Today jobs generated');
     } catch (error) {
@@ -40,7 +40,7 @@ const Scheduler = () => {
   const retryJob = async (id) => {
     try {
       setWorking(true);
-      await api.post(`/api/jobs/${id}/retry`);
+      await api.post(`/api/jobs/${id}/retry`, {});
       await loadJobs();
       toast.success('Job retried');
     } catch (error) {
@@ -50,7 +50,7 @@ const Scheduler = () => {
     }
   };
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <PageSkeleton rows={5} />;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
