@@ -1,6 +1,5 @@
 // Fixed GitHub Utilities - src/utils/github.js
 import axios from 'axios';
-import User from '../models/User.js';
 
 // Get GitHub access token from code
 export const getGitHubAccessToken = async (code) => {
@@ -14,8 +13,6 @@ export const getGitHubAccessToken = async (code) => {
         Accept: 'application/json'
       }
     });
-
-    console.log('GitHub token response:', response.data);
 
     if (response.data.error) {
       throw new Error(`GitHub OAuth Error: ${response.data.error_description || response.data.error}`);
@@ -35,8 +32,6 @@ export const getGitHubAccessToken = async (code) => {
 // Get GitHub user information
 export const getGitHubUser = async (accessToken) => {
   try {
-    console.log('Getting GitHub user with token:', accessToken ? 'Token exists' : 'No token');
-    
     const response = await axios.get('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${accessToken}`, // Changed from 'token' to 'Bearer'
@@ -91,6 +86,107 @@ export const getUserRepositories = async (accessToken) => {
   }
 };
 
+export const getRepository = async (accessToken, owner, repo) => {
+  try {
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'GitHub-Automation-App'
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error getting repository:', error.response?.data || error.message);
+    throw new Error('Failed to get repository');
+  }
+};
+
+export const getBranch = async (accessToken, owner, repo, branch) => {
+  const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/branches/${branch}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'GitHub-Automation-App'
+    }
+  });
+  return response.data;
+};
+
+export const createBranch = async (accessToken, owner, repo, branch, fromSha) => {
+  const response = await axios.post(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
+    ref: `refs/heads/${branch}`,
+    sha: fromSha
+  }, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'GitHub-Automation-App'
+    }
+  });
+  return response.data;
+};
+
+export const deleteBranch = async (accessToken, owner, repo, branch) => {
+  await axios.delete(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'GitHub-Automation-App'
+    }
+  });
+};
+
+export const createPullRequest = async (accessToken, owner, repo, { title, body, head, base }) => {
+  const response = await axios.post(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
+    title,
+    body,
+    head,
+    base
+  }, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'GitHub-Automation-App'
+    }
+  });
+  return response.data;
+};
+
+export const mergePullRequest = async (accessToken, owner, repo, pullNumber, commitTitle) => {
+  const response = await axios.put(`https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/merge`, {
+    commit_title: commitTitle,
+    merge_method: 'squash'
+  }, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'GitHub-Automation-App'
+    }
+  });
+  return response.data;
+};
+
+export const createIssue = async (accessToken, owner, repo, { title, body }) => {
+  const response = await axios.post(`https://api.github.com/repos/${owner}/${repo}/issues`, {
+    title,
+    body
+  }, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'GitHub-Automation-App'
+    }
+  });
+  return response.data;
+};
+
+export const closeIssue = async (accessToken, owner, repo, issueNumber) => {
+  const response = await axios.patch(`https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`, {
+    state: 'closed'
+  }, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'GitHub-Automation-App'
+    }
+  });
+  return response.data;
+};
+
 // Get repository contents
 export const getRepositoryContents = async (accessToken, owner, repo, path = '') => {
   try {
@@ -121,7 +217,7 @@ export const createOrUpdateFile = async (accessToken, owner, repo, path, content
     if (sha) data.sha = sha;
 
     const response = await axios.put(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`,
+      `https://api.github.com/repos/${owner}/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}`,
       data,
       {
         headers: {

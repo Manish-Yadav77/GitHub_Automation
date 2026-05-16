@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Github, Clock, Settings, MessageSquare } from 'lucide-react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
+import api from '../utils/axios';
 
 const CreateAutomation = () => {
   const navigate = useNavigate();
@@ -26,6 +26,14 @@ const CreateAutomation = () => {
     ],
     schedule: {
       daysOfWeek: [1, 2, 3, 4, 5] // Monday to Friday
+    },
+    badgeAutomation: {
+      enabled: false,
+      prCycleEnabled: false,
+      quickdrawEnabled: false,
+      includeCoAuthor: false,
+      galaxyBrainHelper: false,
+      starstruckTracking: true
     }
   });
 
@@ -37,7 +45,7 @@ const CreateAutomation = () => {
 
   const fetchRepositories = async () => {
     try {
-      const response = await axios.get('/api/repos');
+      const response = await api.get('/api/repos');
       setRepositories(response.data.repositories);
     } catch (error) {
       console.error('Error fetching repositories:', error);
@@ -106,7 +114,7 @@ const CreateAutomation = () => {
 
     try {
       setLoading(true);
-      await axios.post('/api/automation', formData);
+      await api.post('/api/automation', formData);
       toast.success('Automation created successfully!');
       navigate('/dashboard');
     } catch (error) {
@@ -258,14 +266,50 @@ const CreateAutomation = () => {
                 value={formData.maxCommitsPerDay}
                 onChange={(e) => setFormData(prev => ({ ...prev, maxCommitsPerDay: parseInt(e.target.value) }))}
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15].map(num => (
+                {[1, 2, 3, 4, 5].map(num => (
                   <option key={num} value={num}>{num}</option>
                 ))}
               </select>
               <p className="mt-1 text-sm text-gray-500">
-                The system will randomly commit between 1 and this number each day
+                Free mode is capped at 5 commits/day for the one selected repository.
               </p>
             </div>
+          </div>
+
+          <div className="bg-white shadow-sm rounded-lg p-6">
+            <div className="flex items-center mb-4">
+              <Github className="h-5 w-5 text-gray-400 mr-2" />
+              <h2 className="text-lg font-medium text-gray-900">Badge Automation</h2>
+            </div>
+            <div className="space-y-3">
+              {[
+                ['enabled', 'Enable badge automation for this selected repo'],
+                ['prCycleEnabled', 'Pull Shark + YOLO PR cycle'],
+                ['quickdrawEnabled', 'Quickdraw issue open/close'],
+                ['includeCoAuthor', 'Include Co-authored-by trailer when configured'],
+                ['galaxyBrainHelper', 'Galaxy Brain helper reminders'],
+                ['starstruckTracking', 'Track Starstruck star count']
+              ].map(([key, label]) => (
+                <label key={key} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2">
+                  <span className="text-sm text-gray-700">{label}</span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(formData.badgeAutomation[key])}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      badgeAutomation: {
+                        ...prev.badgeAutomation,
+                        [key]: e.target.checked
+                      }
+                    }))}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                  />
+                </label>
+              ))}
+            </div>
+            <p className="mt-4 text-sm text-gray-500">
+              Galaxy Brain and Public Sponsor still require manual GitHub actions. AutoGit will only guide and track them.
+            </p>
           </div>
 
           {/* Commit Phrases */}

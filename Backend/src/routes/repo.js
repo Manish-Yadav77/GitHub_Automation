@@ -3,21 +3,23 @@
 import express from 'express';
 import User from '../models/User.js';
 import { getUserRepositories } from '../utils/github.js';
+import { getGitHubTokenForUser } from '../services/tokenService.js';
 
 const router = express.Router();
 
 // Get user repositories from GitHub
 router.get('/', async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select('+githubAccessToken');
+    const user = await User.findById(req.userId);
+    const token = await getGitHubTokenForUser(req.userId);
     
-    if (!user || !user.githubAccessToken) {
+    if (!user || !token) {
       return res.status(400).json({ 
         error: 'GitHub account not connected. Please connect your GitHub account first.' 
       });
     }
 
-    const repositories = await getUserRepositories(user.githubAccessToken);
+    const repositories = await getUserRepositories(token);
     
     // Filter and format repositories
     const formattedRepos = repositories.map(repo => ({

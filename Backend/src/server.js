@@ -1,110 +1,129 @@
-// Enhanced Server with Better Cron Scheduling - src/server.js
-
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import cron from 'node-cron';
 
-// Import routes
 import authRoutes from './routes/auth.js';
 import automationRoutes from './routes/automation.js';
-import userRoutes from './routes/user.js';
+import badgeRoutes from './routes/badges.js';
+import jobRoutes from './routes/jobs.js';
 import repoRoutes from './routes/repo.js';
-
-// Import middleware
-import { authenticateToken } from './middleware/auth.js';
-
-// Import utilities
-import { executeScheduledCommits } from './utils/githubCommit.js';
+import userRoutes from './routes/user.js';
+import { authenticateToken, rejectUnsupportedMethods, requireJson } from './middleware/auth.js';
+import { generateDailyJobs, processDueJobs, startScheduler } from './services/schedulerService.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security middleware
-app.use(helmet());
+app.disable('x-powered-by');
+app.use(rejectUnsupportedMethods);
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginEmbedderPolicy: { policy: 'require-corp' },
+  crossOriginResourcePolicy: { policy: 'same-origin' }
+}));
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'https://autocommitor.netlify.app',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false
+}));
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(requireJson);
 
-// MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/github-automation', {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+  useUnifiedTopology: true
 })
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/automation', authenticateToken, automationRoutes);
-app.use('/api/user', authenticateToken, userRoutes);
+app.use('/api/badges', authenticateToken, badgeRoutes);
+app.use('/api/jobs', authenticateToken, jobRoutes);
 app.use('/api/repos', authenticateToken, repoRoutes);
+app.use('/api/user', authenticateToken, userRoutes);
 
-// Health check route
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV || 'development',
+    version: process.env.npm_package_version || '1.0.0',
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
-// Keep-alive ping endpoint (prevents Render.com free tier from sleeping)
 app.get('/api/ping', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'pong',
     timestamp: new Date().toISOString(),
     cronJobsActive: true
   });
 });
 
-// Detailed health status for monitoring
 app.get('/api/health/detailed', (req, res) => {
   res.json({
-    status: 'OK',
+    status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
+    environment: process.env.NODE_ENV || 'development',
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    cronJobsStatus: 'active',
+    scheduler: 'persisted-jobs',
     memory: {
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+      used: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`,
+      total: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)} MB`
     }
   });
 });
 
-// Debug route to trigger commits manually (for testing)
 app.post('/api/debug/trigger-commits', authenticateToken, async (req, res) => {
   try {
-    console.log('🔧 Manual commit trigger initiated...');
-    await executeScheduledCommits();
-    res.json({ success: true, message: 'Commit check triggered manually' });
+    await generateDailyJobs();
+    await processDueJobs();
+    res.json({ success: true, message: 'Job generation and due-job processing triggered manually' });
   } catch (error) {
-    console.error('❌ Manual trigger failed:', error);
-    res.status(500).json({ error: 'Failed to trigger commits', details: error.message });
+    console.error('Manual trigger failed:', error);
+    res.status(500).json({ error: 'Failed to trigger jobs', details: error.message });
   }
 });
 
-// Error handling middleware
 app.use((error, req, res, next) => {
   console.error(error.stack);
   res.status(500).json({
@@ -113,50 +132,30 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Enhanced cron scheduling with multiple intervals for better coverage
-console.log('⚙️  Setting up cron jobs...');
-
-// Primary scheduler - runs every minute
-cron.schedule('* * * * *', () => {
-  const now = new Date();
-  console.log(`🕐 Running scheduled commit check at ${now.toISOString()}`);
-  executeScheduledCommits();
-}, {
-  timezone: "UTC"
-});
-
-// Additional schedulers for testing/backup
-// Run every 5 minutes as backup
-cron.schedule('*/5 * * * *', () => {
-  console.log('🔄 Running 5-minute backup commit check...');
-  executeScheduledCommits();
-}, {
-  timezone: "UTC"
-});
-
-// Test scheduler for immediate execution (only in development)
-if (process.env.NODE_ENV === 'development') {
-  cron.schedule('*/30 * * * * *', () => { // Every 30 seconds in dev
-    console.log('🚀 Dev mode: Running frequent commit check...');
-    executeScheduledCommits();
-  }, {
-    timezone: "UTC"
-  });
-}
+startScheduler();
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`⏰ Cron jobs scheduled and active`);
-  
-  // Run initial commit check on startup
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('Persisted scheduler active');
+
+  if (process.env.RENDER_EXTERNAL_URL) {
+    setInterval(async () => {
+      try {
+        await fetch(`${process.env.RENDER_EXTERNAL_URL}/api/health`);
+      } catch (error) {
+        console.warn('Keep-alive ping failed:', error.message);
+      }
+    }, 9 * 60 * 1000);
+  }
+
   setTimeout(() => {
-    console.log('🎯 Running initial commit check...');
-    executeScheduledCommits();
-  }, 5000); // Wait 5 seconds after startup
+    generateDailyJobs().then(processDueJobs).catch((error) => {
+      console.error('Startup recovery failed:', error);
+    });
+  }, 5000);
 });

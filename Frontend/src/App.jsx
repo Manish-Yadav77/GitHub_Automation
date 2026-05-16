@@ -18,8 +18,10 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Analytics from './pages/Analytics';
+import Badges from './pages/Badges';
 import CreateAutomation from './pages/CreateAutomation';
 import EditAutomation from './pages/EditAutomation';
+import Scheduler from './pages/Scheduler';
 import AuthCallback from './pages/AuthCallback';
 
 // Protected Route Component
@@ -53,8 +55,6 @@ const PublicRoute = ({ children }) => {
 };
 
 function AppContent() {
-  const { user } = useAuth();
-
   // Start keep-alive service to prevent backend from sleeping
   useEffect(() => {
     if (!keepAliveService.isRunning) {
@@ -132,6 +132,22 @@ function AppContent() {
                 <Analytics />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/badges"
+            element={
+              <ProtectedRoute>
+                <Badges />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/scheduler"
+            element={
+              <ProtectedRoute>
+                <Scheduler />
+              </ProtectedRoute>
+            }
           />
           <Route 
             path="/create-automation" 

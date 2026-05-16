@@ -34,6 +34,26 @@ const userSchema = new mongoose.Schema({
     type: String,
     select: false // Don't include in regular queries
   },
+  githubTokenEncrypted: {
+    type: String,
+    select: false
+  },
+  githubTokenIv: {
+    type: String,
+    select: false
+  },
+  githubTokenTag: {
+    type: String,
+    select: false
+  },
+  altGitHubUsername: {
+    type: String,
+    trim: true
+  },
+  altGitHubEmail: {
+    type: String,
+    trim: true
+  },
   avatar: {
     type: String,
     default: ''
@@ -99,7 +119,7 @@ const userSchema = new mongoose.Schema({
     automation: {
       maxConcurrentRules: {
         type: Number,
-        default: 5
+        default: 1
       },
       defaultCommitFile: {
         type: String,
@@ -115,6 +135,10 @@ const userSchema = new mongoose.Schema({
           default: '17:00'
         }
       }
+    },
+    selectedRepoOnly: {
+      type: Boolean,
+      default: true
     }
   }
 }, {

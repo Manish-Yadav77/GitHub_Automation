@@ -1,7 +1,7 @@
 // Navbar Component - src/components/Navbar.jsx
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Github, User, Settings, LogOut, BarChart3 } from 'lucide-react';
+import { Menu, X, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
@@ -15,11 +15,6 @@ const Navbar = () => {
   const handleLogout = async () => {
     await logout();
     setIsDropdownOpen(false);
-  };
-
-  const desktopOnlyStyle = {
-    display: 'none',
-    // React supports CSSOMStyleDeclaration injection for media queries via a <style> tag.
   };
 
   return (
@@ -62,6 +57,24 @@ const Navbar = () => {
                     }`}
                 >
                   Analytics
+                </Link>
+                <Link
+                  to="/badges"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/badges')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                    }`}
+                >
+                  Badges
+                </Link>
+                <Link
+                  to="/scheduler"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/scheduler')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                    }`}
+                >
+                  Scheduler
                 </Link>
 
                 {/* User Dropdown */}
@@ -176,6 +189,26 @@ const Navbar = () => {
                   onClick={() => setIsOpen(false)}
                 >
                   Analytics
+                </Link>
+                <Link
+                  to="/badges"
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/badges')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                    }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Badges
+                </Link>
+                <Link
+                  to="/scheduler"
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/scheduler')
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                    }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Scheduler
                 </Link>
                 <Link
                   to="/profile"

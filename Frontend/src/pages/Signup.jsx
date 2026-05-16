@@ -46,7 +46,11 @@ const Signup = () => {
 
     setLocalLoading(true);
     
-    const { confirmPassword, ...registrationData } = formData;
+    const registrationData = {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password
+    };
     const result = await register(registrationData);
     
     if (result.success) {

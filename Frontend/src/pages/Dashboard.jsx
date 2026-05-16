@@ -83,7 +83,7 @@ const Dashboard = () => {
 
   const handleStatusChange = async (automationId, newStatus) => {
     try {
-      const response = await axios.patch(`/api/automation/${automationId}/status`, {
+      await axios.patch(`/api/automation/${automationId}/status`, {
         status: newStatus
       });
 

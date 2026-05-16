@@ -5,22 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
-const formatDate = (iso) => {
-  if (!iso) return '—';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch {
-    return '—';
-  }
-};
-
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -37,7 +21,7 @@ const Profile = () => {
     }
   };
   
-  if (user && (!user.hasOwnProperty('isVerified') || !user.hasOwnProperty('createdAt'))) {
+  if (user && (!Object.prototype.hasOwnProperty.call(user, 'isVerified') || !Object.prototype.hasOwnProperty.call(user, 'createdAt'))) {
     fetchFullProfile();
   }
 }, [user, updateUser]);
@@ -137,7 +121,7 @@ const Profile = () => {
 
   // Derived account stats
   const planText = user?.plan || 'free';
-  const verifiedText = user?.hasOwnProperty('isVerified') ? (user.isVerified ? 'Verified' : 'Unverified') : 'Loading...';
+  const verifiedText = Object.prototype.hasOwnProperty.call(user || {}, 'isVerified') ? (user.isVerified ? 'Verified' : 'Unverified') : 'Loading...';
   const createdAtDate = user?.createdAt ? unwrapMongoDate(user.createdAt) : null;
   const createdAtText = createdAtDate ? formatLocalDateTime(createdAtDate) : (user?.id ? 'Sep 17, 2025' : '—');
 

@@ -2,12 +2,39 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { getGitHubUser, getGitHubAccessToken, getGitHubUserEmails } from '../utils/github.js';
+import TokenDenylist from '../models/TokenDenylist.js';
+import { storeGitHubToken } from '../services/tokenService.js';
 
 const router = express.Router();
+
+const issueToken = (userId) => jwt.sign(
+  { userId, jti: crypto.randomUUID() },
+  process.env.JWT_SECRET,
+  { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+);
+
+const setAuthCookie = (res, token) => {
+  res.cookie('autogit_token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000
+  });
+};
+
+const getCookie = (req, name) => {
+  const cookies = req.headers.cookie || '';
+  const match = cookies
+    .split(';')
+    .map(item => item.trim())
+    .find(item => item.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
+};
 
 // Register new user
 router.post('/register', [
@@ -48,11 +75,8 @@ router.post('/register', [
     await user.save();
 
     // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = issueToken(user._id);
+    setAuthCookie(res, token);
 
     res.status(201).json({
       message: 'User created successfully',
@@ -97,11 +121,8 @@ router.post('/login', [
     }
 
     // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = issueToken(user._id);
+    setAuthCookie(res, token);
 
     res.json({
       message: 'Login successful',
@@ -112,7 +133,7 @@ router.post('/login', [
         username: user.username,
         avatar: user.avatar,
         plan: user.plan,
-        githubConnected: !!user.githubAccessToken
+        githubConnected: !!(user.githubAccessToken || user.githubTokenEncrypted)
       }
     });
   } catch (error) {
@@ -170,7 +191,7 @@ router.post('/github/callback', async (req, res) => {
         // Link GitHub account to existing user
         user.githubId = githubUser.id.toString();
         user.githubUsername = githubUser.login;
-        user.githubAccessToken = accessToken;
+        storeGitHubToken(user, accessToken);
         user.avatar = githubUser.avatar_url;
         console.log('Linking GitHub to existing user');
       } else {
@@ -180,15 +201,15 @@ router.post('/github/callback', async (req, res) => {
           username: githubUser.login,
           githubId: githubUser.id.toString(),
           githubUsername: githubUser.login,
-          githubAccessToken: accessToken,
           avatar: githubUser.avatar_url,
           isVerified: true
         });
+        storeGitHubToken(user, accessToken);
         console.log('Creating new user from GitHub');
       }
     } else {
       // Update existing GitHub user
-      user.githubAccessToken = accessToken;
+      storeGitHubToken(user, accessToken);
       user.avatar = githubUser.avatar_url;
       user.githubUsername = githubUser.login; // Update username in case it changed
       console.log('Updating existing GitHub user');
@@ -197,11 +218,8 @@ router.post('/github/callback', async (req, res) => {
     await user.save();
 
     // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const token = issueToken(user._id);
+    setAuthCookie(res, token);
 
     res.json({
       message: 'GitHub authentication successful',
@@ -237,7 +255,7 @@ router.get('/me', authenticateToken, async (req, res) => {
         username: user.username,
         avatar: user.avatar,
         plan: user.plan,
-        githubConnected: !!user.githubAccessToken,
+        githubConnected: !!(user.githubAccessToken || user.githubTokenEncrypted),
         githubUsername: user.githubUsername,
         settings: user.settings
       }
@@ -249,7 +267,22 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // Logout (client-side token removal)
-router.post('/logout', authenticateToken, (req, res) => {
+router.post('/logout', authenticateToken, async (req, res) => {
+  const token = getCookie(req, 'autogit_token') || req.headers.authorization?.split(' ')[1];
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.jti) {
+        await TokenDenylist.create({
+          jti: decoded.jti,
+          expiresAt: new Date(decoded.exp * 1000)
+        });
+      }
+    } catch (error) {
+      // Ignore invalid tokens during logout.
+    }
+  }
+  res.clearCookie('autogit_token');
   res.json({ message: 'Logout successful' });
 });
 

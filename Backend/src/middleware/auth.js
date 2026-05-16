@@ -1,17 +1,33 @@
 // Backend Middleware - Authentication - src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import TokenDenylist from '../models/TokenDenylist.js';
+
+const getCookie = (req, name) => {
+  const cookies = req.headers.cookie || '';
+  const match = cookies
+    .split(';')
+    .map(item => item.trim())
+    .find(item => item.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
+};
 
 export const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = getCookie(req, 'autogit_token') || (authHeader && authHeader.split(' ')[1]);
 
     if (!token) {
       return res.status(401).json({ error: 'Access token required' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.jti) {
+      const denied = await TokenDenylist.exists({ jti: decoded.jti });
+      if (denied) {
+        return res.status(401).json({ error: 'Session has been logged out' });
+      }
+    }
     const user = await User.findById(decoded.userId);
 
     if (!user) {
@@ -69,8 +85,8 @@ export const requireAdmin = (req, res, next) => {
 export const requirePlan = (requiredPlan) => {
   const planHierarchy = {
     'free': 0,
-    'pro': 1,
-    'premium': 2
+    'pro': 0,
+    'premium': 0
   };
 
   return (req, res, next) => {
@@ -133,16 +149,15 @@ export const userRateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
 // GitHub token validation
 export const validateGitHubToken = async (req, res, next) => {
   try {
-    const user = await User.findById(req.userId).select('+githubAccessToken');
+    const user = await User.findById(req.userId).select('+githubAccessToken +githubTokenEncrypted');
     
-    if (!user || !user.githubAccessToken) {
+    if (!user || (!user.githubAccessToken && !user.githubTokenEncrypted)) {
       return res.status(400).json({ 
         error: 'GitHub account not connected',
         code: 'GITHUB_NOT_CONNECTED'
       });
     }
 
-    req.githubToken = user.githubAccessToken;
     next();
   } catch (error) {
     console.error('GitHub token validation error:', error);
@@ -185,4 +200,18 @@ export default {
   userRateLimit,
   validateGitHubToken,
   validateAutomationOwnership
+};
+
+export const requireJson = (req, res, next) => {
+  if (['POST', 'PUT', 'PATCH'].includes(req.method) && !req.is('application/json')) {
+    return res.status(415).json({ error: 'Content-Type must be application/json' });
+  }
+  next();
+};
+
+export const rejectUnsupportedMethods = (req, res, next) => {
+  if (['TRACE', 'CONNECT'].includes(req.method)) {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  next();
 };

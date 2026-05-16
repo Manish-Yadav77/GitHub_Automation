@@ -146,16 +146,29 @@ router.get('/', async (req, res) => {
 router.post('/', [
   body('repoName').trim().notEmpty().withMessage('Repository name is required'),
   body('repoOwner').trim().notEmpty().withMessage('Repository owner is required'),
-  body('maxCommitsPerDay').isInt({ min: 1, max: 50 }).withMessage('Max commits per day must be between 1 and 50'),
+  body('maxCommitsPerDay').isInt({ min: 1, max: 5 }).withMessage('Max commits per day must be between 1 and 5'),
   body('commitPhrases').isArray({ min: 1, max: 5 }).withMessage('Must have 1-5 commit phrases'),
   body('timeRange.startTime').notEmpty().withMessage('Start time is required'),
   body('timeRange.endTime').notEmpty().withMessage('End time is required'),
-  body('schedule.daysOfWeek').isArray({ min: 1 }).withMessage('At least one day must be selected')
+  body('schedule.daysOfWeek').isArray({ min: 1 }).withMessage('At least one day must be selected'),
+  body('badgeAutomation.enabled').optional().isBoolean(),
+  body('badgeAutomation.prCycleEnabled').optional().isBoolean(),
+  body('badgeAutomation.quickdrawEnabled').optional().isBoolean(),
+  body('badgeAutomation.includeCoAuthor').optional().isBoolean(),
+  body('repoName').matches(/^[a-zA-Z0-9._-]+$/).withMessage('Invalid repository name'),
+  body('repoOwner').matches(/^[a-zA-Z0-9-]+$/).withMessage('Invalid repository owner')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+
+    const existingAutomation = await Automation.findOne({ userId: req.userId });
+    if (existingAutomation) {
+      return res.status(400).json({
+        error: 'Free mode allows one selected repository at a time. Deactivate the current repo before selecting another.'
+      });
     }
 
     const automation = new Automation({
@@ -175,11 +188,17 @@ router.post('/', [
 router.put('/:id', [
   body('repoName').trim().notEmpty().withMessage('Repository name is required'),
   body('repoOwner').trim().notEmpty().withMessage('Repository owner is required'),
-  body('maxCommitsPerDay').isInt({ min: 1, max: 50 }).withMessage('Max commits per day must be between 1 and 50'),
+  body('maxCommitsPerDay').isInt({ min: 1, max: 5 }).withMessage('Max commits per day must be between 1 and 5'),
   body('commitPhrases').isArray({ min: 1, max: 5 }).withMessage('Must have 1-5 commit phrases'),
   body('timeRange.startTime').notEmpty().withMessage('Start time is required'),
   body('timeRange.endTime').notEmpty().withMessage('End time is required'),
-  body('schedule.daysOfWeek').isArray({ min: 1 }).withMessage('At least one day must be selected')
+  body('schedule.daysOfWeek').isArray({ min: 1 }).withMessage('At least one day must be selected'),
+  body('badgeAutomation.enabled').optional().isBoolean(),
+  body('badgeAutomation.prCycleEnabled').optional().isBoolean(),
+  body('badgeAutomation.quickdrawEnabled').optional().isBoolean(),
+  body('badgeAutomation.includeCoAuthor').optional().isBoolean(),
+  body('repoName').matches(/^[a-zA-Z0-9._-]+$/).withMessage('Invalid repository name'),
+  body('repoOwner').matches(/^[a-zA-Z0-9-]+$/).withMessage('Invalid repository owner')
 ], async (req, res) => {
   try {
     // Validate ObjectId

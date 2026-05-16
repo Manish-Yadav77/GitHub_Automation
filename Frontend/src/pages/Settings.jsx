@@ -1,6 +1,6 @@
 // Settings Page - src/pages/Settings.jsx
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Bell, 
   Globe, 
   Shield, 
@@ -16,12 +16,10 @@ import {
   Github,
   AlertTriangle
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const Settings = () => {
-  const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({
     notifications: {

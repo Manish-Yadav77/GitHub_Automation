@@ -27,7 +27,7 @@ const automationSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1,
-    max: 50
+    max: 5
   },
   timeRange: {
     startTime: {
@@ -47,6 +47,32 @@ const automationSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'paused', 'stopped'],
     default: 'active'
+  },
+  badgeAutomation: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    prCycleEnabled: {
+      type: Boolean,
+      default: false
+    },
+    quickdrawEnabled: {
+      type: Boolean,
+      default: false
+    },
+    includeCoAuthor: {
+      type: Boolean,
+      default: false
+    },
+    galaxyBrainHelper: {
+      type: Boolean,
+      default: false
+    },
+    starstruckTracking: {
+      type: Boolean,
+      default: true
+    }
   },
   lastCommit: {
     timestamp: Date,
@@ -90,6 +116,7 @@ const automationSchema = new mongoose.Schema({
 automationSchema.index({ userId: 1 });
 automationSchema.index({ status: 1 });
 automationSchema.index({ 'schedule.daysOfWeek': 1 });
+automationSchema.index({ userId: 1, repoOwner: 1, repoName: 1 }, { unique: true });
 
 // Methods
 automationSchema.methods.incrementCommitCount = function() {

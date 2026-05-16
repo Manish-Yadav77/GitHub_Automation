@@ -5,6 +5,7 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://github-automation-8d48.onrender.com',
   timeout: 10000,
+  withCredentials: true,
 });
 
 // Request interceptor to add auth token

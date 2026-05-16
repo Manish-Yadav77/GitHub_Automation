@@ -15,6 +15,7 @@ export const useAuth = () => {
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://github-automation-8d48.onrender.com';
 axios.defaults.baseURL = API_URL;
+axios.defaults.withCredentials = true;
 
 export const AuthProvider = ({ children }) => {
   // Keep original state
